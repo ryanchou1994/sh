@@ -1768,22 +1768,25 @@ for i in range(5):
         py = create_tmp_test(
             """
 import sys
-import os
-import time
 import signal
+import threading
 
-i = 0
+received = threading.Event()
 def sig_handler(sig, frame):
     global i
     i = 42
+    received.set()
 
 signal.signal(signal.SIGINT, sig_handler)
 
-for _ in range(6):
+for i in range(4):
     print(i)
-    i += 1
     sys.stdout.flush()
-    time.sleep(2)
+
+if not received.wait(10):
+    raise RuntimeError("Timed out waiting for SIGINT")
+print(i)
+print(i + 1)
 """
         )
 
