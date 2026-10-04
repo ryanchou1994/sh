@@ -1769,13 +1769,11 @@ for i in range(5):
             """
 import sys
 import signal
-import threading
+import time
 
-received = threading.Event()
 def sig_handler(sig, frame):
     global i
     i = 42
-    received.set()
 
 signal.signal(signal.SIGINT, sig_handler)
 
@@ -1783,8 +1781,11 @@ for i in range(4):
     print(i)
     sys.stdout.flush()
 
-if not received.wait(10):
-    raise RuntimeError("Timed out waiting for SIGINT")
+deadline = time.monotonic() + 10
+while i != 42:
+    if time.monotonic() >= deadline:
+        raise RuntimeError("Timed out waiting for SIGINT")
+    time.sleep(0.01)
 print(i)
 print(i + 1)
 """
@@ -1799,7 +1800,7 @@ print(i + 1)
                 process.signal(SIGINT)
                 return True
 
-        p = python(py.name, _out=agg, _tee=True)
+        p = python(py.name, _out=agg, _tee=True, _timeout=15)
         p.wait()
 
         self.assertEqual(p.process.exit_code, 0)
